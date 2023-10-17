@@ -194,11 +194,13 @@ function Page() {
 
     let topFriends = events.filter(e => followMap[e.pubkey]?.count > 0).map(e => {
       const c = JSON.parse(e.content)
+      const score = followMap[e.pubkey].count
       return {
         pubkey: e.pubkey,
         name: c.name || c.display_name || c.displayName || c.username,
         picture: c.picture,
-        score: followMap[e.pubkey].count,
+        score: score,
+        percentage: Math.ceil(score / follows.length * 100),
         followsMe: followMap[e.pubkey].followsMe,
       }
     })
@@ -227,9 +229,9 @@ function Page() {
             <Link to={'https://primal.net/p/' + nip19.npubEncode(p.pubkey)} target='_blank'>
               {p.name}
             </Link>
-            {' (friend score: '}{p.score}{')'}
+            {' friend score:'} {p.score} {'('}{p.percentage}%{')'}
             {' '}{p.followsMe && <span style={{ color: 'green' }}>follows {profile.name}</span>}
-            {!p.followsMe && <span style={{ color: 'red' }}>does not follow {profile.name}</span>}
+            {!p.followsMe && <span style={{ color: 'red' }}>doesn't follow {profile.name}</span>}
           </div>)}
         </div>
       </header>
