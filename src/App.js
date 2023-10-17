@@ -118,7 +118,6 @@ function Page() {
       kinds: [3],
       authors: follows
     }])
-    console.log('e', window.e)
 
     let followMap = {}
     events.forEach(e => {
@@ -132,52 +131,78 @@ function Page() {
       return list[0]
     })
 
-    follows = {}
-    events.forEach(e => {
-      follows[e.pubkey] = e.tags.filter(t => t[0] === 'p').map(t => t[1])
-    })
     let followedBy = {}
     events.forEach(follower => {
-      follows[follower.pubkey].forEach(followee => {
-        let list = followedBy[followee] || []
-        followedBy[followee] = list
-        if (follows[followee]?.includes(follower.pubkey)) {
-          list.push(follower.pubkey)
-        }
+      follower.tags.filter(t => t[0] === 'p').map(t => t[1]).forEach(followee => {
+        followedBy[followee] = followedBy[followee] || new Set()
+        followedBy[followee].add(follower.pubkey)
       })
     })
+    console.log(followedBy)
+    console.log('follows length', follows.length)
+    let max = Math.floor(follows.length / 10)
+    console.log('max', max)
     let friends = Object.entries(followedBy)
-      .sort((a, b) => b[1].length - a[1].length)
-      .filter(e => e[1].length > 0)
+      .filter(e => !follows.includes(e[0]))
+      .sort((a, b) => b[1].size - a[1].size)
+      .slice(0, 300)
+    
     console.log('friends', friends)
 
     let friendPubkeys = friends.map(f => f[0])
+    // console.log('friendPubkeys', friendPubkeys)
     events = await pool.list(getAllRelays(), [{
-      kinds: [0],
+      kinds: [0, 3],
       authors: friendPubkeys
     }])
 
     let friendMap = {}
+    followMap = {}
     events.forEach(e => {
-      let list = friendMap[e.pubkey] || []
-      friendMap[e.pubkey] = list
-      list.push(e)
+      if (e.kind === 0) {
+        let list = friendMap[e.pubkey] || []
+        friendMap[e.pubkey] = list
+        list.push(e)
+      } else {
+        let list = followMap[e.pubkey] || []
+        followMap[e.pubkey] = list
+        list.push(e)
+      }
     })
     events = Object.values(friendMap).map(list => {
       list.sort((a, b) => b.created_at - a.created_at)
       return list[0]
     })
+    follows = Object.values(followMap).map(list => {
+      list.sort((a, b) => b.created_at - a.created_at)
+      return list[0]
+    })
+    followMap = {}
+    follows.forEach(follower => {
+      followMap[follower.pubkey] = {
+        followsMe: follower.tags.some(t => t[1] === pubkey),
+        count: 0
+      }
+      follower.tags.filter(t => t[0] === 'p').map(t => t[1]).forEach(followee => {
+        if (followedBy[follower.pubkey]?.has(followee)) {
+          followMap[follower.pubkey].count++
+        }
+      })
+    })
+    console.log(followMap)
 
-    let topFriends = events.map(e => {
+    let topFriends = events.filter(e => followMap[e.pubkey]?.count > 0).map(e => {
       const c = JSON.parse(e.content)
       return {
         pubkey: e.pubkey,
         name: c.name || c.display_name || c.displayName || c.username,
         picture: c.picture,
-        score: followedBy[e.pubkey].length
+        score: followMap[e.pubkey].count,
+        followsMe: followMap[e.pubkey].followsMe,
       }
     })
     topFriends.sort((a, b) => b.score - a.score)
+    console.log('topFriends', topFriends)
     setInactive(topFriends)
   }
 
@@ -193,6 +218,8 @@ function Page() {
           {inactive.map(p => <div key={p.pubkey}>
             <Link style={{ fontSize: '20px', textDecoration: 'none' }} to={'/' + nip19.npubEncode(p.pubkey)}>
               <img src={p.picture} width={50} />{' '}{p.name}{' (friend score: '}{p.score}{')'}
+              {' '}{p.followsMe && <span style={{ color: 'green' }}>follows you</span>}
+              {!p.followsMe && <span style={{ color: 'red' }}>does not follow you</span>}
             </Link>
           </div>)}
         </div>
