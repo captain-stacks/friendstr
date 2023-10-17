@@ -215,12 +215,16 @@ function Page() {
           <p />
           {/* <Link to='/'>Home</Link>{' '}
           <Link to='/npub1jk9h2jsa8hjmtm9qlcca942473gnyhuynz5rmgve0dlu6hpeazxqc3lqz7'>Ser</Link> */}
-          {inactive.map(p => <div key={p.pubkey}>
-            <Link style={{ fontSize: '20px', textDecoration: 'none' }} to={'/' + nip19.npubEncode(p.pubkey)}>
-              <img src={p.picture} width={50} />{' '}{p.name}{' (friend score: '}{p.score}{')'}
-              {' '}{p.followsMe && <span style={{ color: 'green' }}>follows {profile.name}</span>}
-              {!p.followsMe && <span style={{ color: 'red' }}>does not follow {profile.name}</span>}
+          {inactive.map(p => <div key={p.pubkey} style={{ fontSize: '20px', textDecoration: 'none' }}>
+            <Link to={'/' + nip19.npubEncode(p.pubkey)}>
+              <img src={p.picture} width={50} />
+            </Link>{' '}
+            <Link to={'https://primal.net/p/' + nip19.npubEncode(p.pubkey)} target='_blank'>
+              {p.name}
             </Link>
+            {' (friend score: '}{p.score}{')'}
+            {' '}{p.followsMe && <span style={{ color: 'green' }}>follows {profile.name}</span>}
+            {!p.followsMe && <span style={{ color: 'red' }}>does not follow {profile.name}</span>}
           </div>)}
         </div>
       </header>
