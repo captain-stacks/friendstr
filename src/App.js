@@ -112,6 +112,7 @@ function Page() {
     setFollowCount(follows.length)
     let c = JSON.parse(profile.content)
     c.name = c.name || c.display_name || c.displayName || c.username
+    c.npub = nip19.npubEncode(pubkey)
     setProfile(c)
 
     events = await pool.list(getAllRelays(), [{
@@ -211,7 +212,11 @@ function Page() {
       <header className="App-header">
         <div className="container">
           <img src={profile.picture} alt="" width={100} />
-          {' '}{profile.name}{' follows '}{followCount}{' nostriches'}
+          {' '}
+          <Link to={'https://primal.net/p/' + profile.npub} target='_blank'>
+            {profile.name}
+          </Link>
+          {' follows '}{followCount}{' nostriches'}
           <p />
           {/* <Link to='/'>Home</Link>{' '}
           <Link to='/npub1jk9h2jsa8hjmtm9qlcca942473gnyhuynz5rmgve0dlu6hpeazxqc3lqz7'>Ser</Link> */}
