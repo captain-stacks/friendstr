@@ -145,7 +145,7 @@ function Page() {
     let friends = Object.entries(followedBy)
       .filter(e => !follows.includes(e[0]))
       .sort((a, b) => b[1].size - a[1].size)
-      .slice(0, 300)
+      .slice(0, 400)
     
     console.log('friends', friends)
 
@@ -201,7 +201,7 @@ function Page() {
         followsMe: followMap[e.pubkey].followsMe,
       }
     })
-    topFriends.sort((a, b) => b.score - a.score)
+    topFriends = topFriends.sort((a, b) => b.score - a.score).slice(0, 250)
     console.log('topFriends', topFriends)
     setInactive(topFriends)
   }
@@ -218,8 +218,8 @@ function Page() {
           {inactive.map(p => <div key={p.pubkey}>
             <Link style={{ fontSize: '20px', textDecoration: 'none' }} to={'/' + nip19.npubEncode(p.pubkey)}>
               <img src={p.picture} width={50} />{' '}{p.name}{' (friend score: '}{p.score}{')'}
-              {' '}{p.followsMe && <span style={{ color: 'green' }}>follows you</span>}
-              {!p.followsMe && <span style={{ color: 'red' }}>does not follow you</span>}
+              {' '}{p.followsMe && <span style={{ color: 'green' }}>follows {profile.name}</span>}
+              {!p.followsMe && <span style={{ color: 'red' }}>does not follow {profile.name}</span>}
             </Link>
           </div>)}
         </div>
