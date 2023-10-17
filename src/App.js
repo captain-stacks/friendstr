@@ -109,7 +109,8 @@ function Page() {
     follows = follows[0]
     follows = follows.tags.filter(t => t[0] === 'p').map(t => t[1])
     setContacts(follows)
-    setFollowCount(follows.length)
+    const followCount = follows.length
+    setFollowCount(followCount)
     let c = JSON.parse(profile.content)
     c.name = c.name || c.display_name || c.displayName || c.username
     c.npub = nip19.npubEncode(pubkey)
@@ -200,7 +201,7 @@ function Page() {
         name: c.name || c.display_name || c.displayName || c.username,
         picture: c.picture,
         score: score,
-        percentage: Math.ceil(score / follows.length * 100),
+        percentage: Math.ceil(score / followCount * 100),
         followsMe: followMap[e.pubkey].followsMe,
       }
     })
