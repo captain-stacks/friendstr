@@ -109,17 +109,18 @@ function Page() {
     follows = follows[0]
     follows = follows.tags.filter(t => t[0] === 'p').map(t => t[1])
     setContacts(follows)
-    setFollowCount(follows.length)
+    const followCount = follows.length
+    setFollowCount(followCount)
     let c = JSON.parse(profile.content)
     c.name = c.name || c.display_name || c.displayName || c.username
+c.npub = nip19.npubEncode(pubkey)
     setProfile(c)
 
     events = await pool.list(getAllRelays(), [{
       kinds: [3],
       authors: follows
     }])
-    console.log('e', window.e)
-
+    
     let followMap = {}
     events.forEach(e => {
       let list = followMap[e.pubkey] || []
@@ -170,11 +171,14 @@ function Page() {
 
     let topFriends = events.map(e => {
       const c = JSON.parse(e.content)
+      const score = followedBy[e.pubkey].length
       return {
         pubkey: e.pubkey,
         name: c.name || c.display_name || c.displayName || c.username,
         picture: c.picture,
-        score: followedBy[e.pubkey].length
+        score: score,
+        percentage: Math.ceil(score / followCount * 100),
+        followsMe: followedBy[pubkey].includes(e.pubkey),
       }
     })
     topFriends.sort((a, b) => b.score - a.score)
@@ -186,14 +190,24 @@ function Page() {
       <header className="App-header">
         <div className="container">
           <img src={profile.picture} alt="" width={100} />
-          {' '}{profile.name}{' follows '}{followCount}{' nostriches'}
+          {' '}
+          <Link to={'https://primal.net/p/' + profile.npub} target='_blank'>
+            {profile.name}
+          </Link>
+          {' follows '}{followCount}{' nostriches'}
           <p />
           {/* <Link to='/'>Home</Link>{' '}
           <Link to='/npub1jk9h2jsa8hjmtm9qlcca942473gnyhuynz5rmgve0dlu6hpeazxqc3lqz7'>Ser</Link> */}
-          {inactive.map(p => <div key={p.pubkey}>
-            <Link style={{ fontSize: '20px', textDecoration: 'none' }} to={'/' + nip19.npubEncode(p.pubkey)}>
-              <img src={p.picture} width={50} />{' '}{p.name}{' (friend score: '}{p.score}{')'}
+          {inactive.map(p => <div key={p.pubkey} style={{ fontSize: '20px', textDecoration: 'none' }}>
+            <Link to={'/' + nip19.npubEncode(p.pubkey)}>
+              <img src={p.picture} width={50} />
+            </Link>{' '}
+            <Link to={'https://primal.net/p/' + nip19.npubEncode(p.pubkey)} target='_blank'>
+              {p.name}
             </Link>
+            {' friend score:'} {p.score} {'('}{p.percentage}%{')'}
+            {' '}{p.followsMe && <span style={{ color: 'green' }}>follows {profile.name}</span>}
+            {!p.followsMe && <span style={{ color: 'red' }}>doesn't follow {profile.name}</span>}
           </div>)}
         </div>
       </header>
