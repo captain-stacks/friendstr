@@ -50,6 +50,11 @@ function Page() {
     'wss://offchain.pub',
     'wss://relayable.org',
     'wss://nostr.thank.eu',
+    'wss://relay.nostr.bg',
+    'wss://relay.primal.net',
+    'wss://nostr.bitcoiner.social',
+    'wss://relay.nostrati.com',
+    'wss://relay.orangepill.dev',
   ].map(r => [r, { read: true, write: true }]))
 
   window.setProgress = setProgress
@@ -108,12 +113,15 @@ function Page() {
     follows.sort((a, b) => b.created_at - a.created_at)
     follows = follows[0]
     follows = follows.tags.filter(t => t[0] === 'p').map(t => t[1])
+    if (!follows.includes(pubkey)) {
+      follows.push(profile.pubkey)
+    }
     setContacts(follows)
     const followCount = follows.length
     setFollowCount(followCount)
     let c = JSON.parse(profile.content)
     c.name = c.name || c.display_name || c.displayName || c.username
-c.npub = nip19.npubEncode(pubkey)
+    c.npub = nip19.npubEncode(pubkey)
     setProfile(c)
 
     events = await pool.list(getAllRelays(), [{
@@ -149,7 +157,7 @@ c.npub = nip19.npubEncode(pubkey)
     })
     let friends = Object.entries(followedBy)
       .sort((a, b) => b[1].length - a[1].length)
-      .filter(e => e[1].length > 0)
+      .filter(f => followMap[f[0]])
     console.log('friends', friends)
 
     let friendPubkeys = friends.map(f => f[0])
