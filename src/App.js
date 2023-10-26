@@ -37,10 +37,8 @@ function Page() {
   const [pubkey, setPubkey] = useState()
   const [profile, setProfile] = useState({})
   const [followCount, setFollowCount] = useState(0)
-  const [progress, setProgress] = useState(0)
+  const [showFollowAll, setShowFollowAll] = useState()
   const [contacts, setContacts] = useState([])
-  const [showProgress, setShowProgress] = useState(false)
-  const [months, setMonths] = useState(3)
   const [inactive, setInactive] = useState([])
   const [relays, setRelays] = useState([
     'wss://nos.lol',
@@ -50,9 +48,12 @@ function Page() {
     'wss://offchain.pub',
     'wss://relayable.org',
     'wss://nostr.thank.eu',
+    'wss://relay.nostr.bg',
+    'wss://relay.primal.net',
+    'wss://nostr.bitcoiner.social',
+    'wss://relay.nostrati.com',
+    'wss://relay.orangepill.dev',
   ].map(r => [r, { read: true, write: true }]))
-
-  window.setProgress = setProgress
 
   useEffect(() => {
     let pubkey = npub ? nip19.decode(npub).data : localStorage.getItem('pubkey')
@@ -208,6 +209,29 @@ function Page() {
     topFriends = topFriends.sort((a, b) => b.score - a.score).slice(0, 250)
     console.log('topFriends', topFriends)
     setInactive(topFriends)
+    setShowFollowAll(true)
+  }
+
+  async function followAll() {
+    setShowFollowAll(false)
+    const events = await pool.list(getAllRelays(), [{
+      kinds: [3],
+      authors: [await window.nostr.getPublicKey()]
+    }])
+    events.sort((a, b) => b.created_at - a.created_at)
+    let contactList = events[0]
+    const follows = new Set(contactList.tags.filter(t => t[0] === 'p').map(t => t[1]))
+    const tags = contactList.tags.filter(t => t[0] !== 'p')
+    inactive.map(p => p.pubkey).forEach(pubkey => follows.add(pubkey))
+    ;[...follows].map(pubkey => ['p', pubkey]).forEach(t => tags.push(t))
+    contactList.id = null
+    contactList.created_at = Math.floor(Date.now() / 1000)
+    contactList.tags = tags
+    contactList = await window.nostr.signEvent(contactList)
+    let pubs = pool.publish(getWriteRelays(), contactList)
+    Promise.all(pubs).catch(e => console.log('error publishing', e))
+    alert('followed all')
+    findProfile()
   }
 
   return (
@@ -220,7 +244,10 @@ function Page() {
             {profile.name}
           </Link>
           {' follows '}{followCount}{' nostriches'}
-          <p />
+          <p/>
+          Suggested follows:
+          {showFollowAll && <button onClick={followAll} style={{ fontSize: '20px', marginLeft: '200px' }}>follow all</button>}
+          <p/>
           {/* <Link to='/'>Home</Link>{' '}
           <Link to='/npub1jk9h2jsa8hjmtm9qlcca942473gnyhuynz5rmgve0dlu6hpeazxqc3lqz7'>Ser</Link> */}
           {inactive.map(p => <div key={p.pubkey} style={{ fontSize: '20px', textDecoration: 'none' }}>
