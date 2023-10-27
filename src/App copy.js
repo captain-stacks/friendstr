@@ -30,6 +30,54 @@ function App() {
     'wss://nostr.thank.eu'
   ].map(r => [r, {read: true, write: true}]))
 
+  async function findRelays() {
+
+    let events = await pool.list(getAllRelays(), [{
+
+      kinds: [3, 0, 10_002],
+
+      authors: ['await nostr.getPublicKey()']
+
+    }])
+
+    events.sort((a, b) => b.created_at - a.created_at)
+
+    let event = events[0]
+
+    let relays = event.kind === 3
+
+      ? Object.entries(JSON.parse(event.content))
+
+      : event.tags
+
+        .filter(t => t[0] === 'r')
+
+        .map(t => [t[1], !t[2]
+
+          ? {read: true, write: true}
+
+          : {read: t[2] === 'read', write: t[2] === 'write'}])
+
+
+    setRelays(relays)
+
+
+  }
+
+function getReadRelays() {
+    return relays.filter(r => r[1].read).map(r=> r[0])
+}
+
+function getWriteRelays() {
+    return relays.filter(r => r[1].write).map(r=> r[0])
+}
+
+  function getAllRelays() {
+
+    return relays.map(r=> r[0])
+
+}
+
   useEffect(() => {
     let pubkey = localStorage.getItem('pubkey')
     if (pubkey) {
