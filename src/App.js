@@ -113,11 +113,11 @@ function Page() {
     follows.sort((a, b) => b.created_at - a.created_at)
     follows = follows[0]
     follows = follows.tags.filter(t => t[0] === 'p').map(t => t[1])
+    const followCount = follows.length
     if (!follows.includes(pubkey)) {
       follows.push(profile.pubkey)
     }
     setContacts(follows)
-    const followCount = follows.length
     setFollowCount(followCount)
     let c = JSON.parse(profile.content)
     c.name = c.name || c.display_name || c.displayName || c.username
@@ -179,12 +179,17 @@ function Page() {
 
     let topFriends = events.map(e => {
       const c = JSON.parse(e.content)
-      const score = followedBy[e.pubkey].length
+      let score = followedBy[e.pubkey].length
+      const followsCount = follows[e.pubkey].length
+      const multiplier = followsCount > followCount ? followCount / followsCount : 1
+      score *= multiplier
       return {
         pubkey: e.pubkey,
         name: c.name || c.display_name || c.displayName || c.username,
         picture: c.picture,
-        score: score,
+        score: Math.ceil(score),
+        follows: followsCount,
+        multiplier: multiplier,
         percentage: Math.ceil(score / followCount * 100),
         followsMe: followedBy[pubkey].includes(e.pubkey),
       }
@@ -204,8 +209,6 @@ function Page() {
           </Link>
           {' follows '}{followCount}{' nostriches'}
           <p />
-          {/* <Link to='/'>Home</Link>{' '}
-          <Link to='/npub1jk9h2jsa8hjmtm9qlcca942473gnyhuynz5rmgve0dlu6hpeazxqc3lqz7'>Ser</Link> */}
           {inactive.map(p => <div key={p.pubkey} style={{ fontSize: '20px', textDecoration: 'none' }}>
             <Link to={'/' + nip19.npubEncode(p.pubkey)}>
               <img src={p.picture} width={50} />
@@ -213,7 +216,7 @@ function Page() {
             <Link to={'https://primal.net/p/' + nip19.npubEncode(p.pubkey)} target='_blank'>
               {p.name}
             </Link>
-            {' friend score:'} {p.score} {'('}{p.percentage}%{')'}
+            {' '}follows {p.follows}, {'friend score:'} {p.percentage}%
             {' '}{p.followsMe && <span style={{ color: 'green' }}>follows {profile.name}</span>}
             {!p.followsMe && <span style={{ color: 'red' }}>doesn't follow {profile.name}</span>}
           </div>)}
