@@ -146,7 +146,7 @@ function Page() {
     let max = Math.floor(follows.length / 10)
     console.log('max', max)
     let friends = Object.entries(followedBy)
-      .filter(e => !follows.includes(e[0]))
+      .filter(e => !follows.includes(e[0]) && e[0] !== pubkey)
       .sort((a, b) => b[1].size - a[1].size)
       .slice(0, 400)
     
@@ -184,7 +184,8 @@ function Page() {
     follows.forEach(follower => {
       followMap[follower.pubkey] = {
         followsMe: follower.tags.some(t => t[1] === pubkey),
-        count: 0
+        count: 0,
+        followsCount: follower.tags.filter(t => t[0] === 'p').length
       }
       follower.tags.filter(t => t[0] === 'p').map(t => t[1]).forEach(followee => {
         if (followedBy[follower.pubkey]?.has(followee)) {
@@ -196,12 +197,16 @@ function Page() {
 
     let topFriends = events.filter(e => followMap[e.pubkey]?.count > 0).map(e => {
       const c = JSON.parse(e.content)
-      const score = followMap[e.pubkey].count
+      let score = followMap[e.pubkey].count
+      const followsCount = followMap[e.pubkey].followsCount
+      const multiplier = followsCount > followCount ? followCount / followsCount : 1
+      score *= multiplier
       return {
         pubkey: e.pubkey,
         name: c.name || c.display_name || c.displayName || c.username,
         picture: c.picture,
-        score: score,
+        score: Math.ceil(score),
+        follows: followsCount,
         percentage: Math.ceil(score / followCount * 100),
         followsMe: followMap[e.pubkey].followsMe,
       }
@@ -255,7 +260,7 @@ function Page() {
             <Link to={'https://primal.net/p/' + nip19.npubEncode(p.pubkey)} target='_blank'>
               {p.name}
             </Link>
-            {' friend score:'} {p.score} {'('}{p.percentage}%{')'}
+            {' '}follows {p.follows}, friend score: {p.percentage}%
             {' '}{p.followsMe && <span style={{ color: 'green' }}>follows {profile.name}</span>}
             {!p.followsMe && <span style={{ color: 'red' }}>doesn't follow {profile.name}</span>}
           </div>)}
