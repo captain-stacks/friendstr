@@ -211,7 +211,7 @@ function Page() {
         followsMe: followMap[e.pubkey].followsMe,
       }
     })
-    topFriends = topFriends.sort((a, b) => b.score - a.score).slice(0, 250)
+    topFriends = topFriends.sort((a, b) => b.percentage - a.percentage).slice(0, 250)
     console.log('topFriends', topFriends)
     setInactive(topFriends)
     setShowFollowAll(true)
